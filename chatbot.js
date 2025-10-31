@@ -2,15 +2,42 @@
  * CHATBOT.JS
  * ===========
  * This file contains the main ChatBot component.
- * It handles the UI and user interactions.
+ * It handles the UI and user interactions - NO TAILWIND!
  */
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Sparkles } from 'lucide-react';
 import * as config from './config.js';
 
 /**
+ * Color schemes for different tasks (PASTELS!)
+ */
+const TASK_COLORS = {
+  'Neutral': {
+    primary: '#a8c5e8',      // Soft Blue
+    secondary: '#c8b8db',    // Light Purple
+    userBg: '#a8c5e8',
+    userBgDark: '#8bb3d9',
+    background: 'linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%)'
+  },
+  'Condescending': {
+    primary: '#f5a5a5',      // Soft Red/Pink
+    secondary: '#ffc1a8',    // Peachy
+    userBg: '#f5a5a5',
+    userBgDark: '#e88d8d',
+    background: 'linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%)'
+  },
+  'Agreeable': {
+    primary: '#b8e6b8',      // Soft Green
+    secondary: '#a8d8c8',    // Mint
+    userBg: '#b8e6b8',
+    userBgDark: '#9dd49d',
+    background: 'linear-gradient(135deg, #f0fff0 0%, #e8f5e8 100%)'
+  }
+};
+
+/**
  * Simple Markdown Parser
- * Converts markdown text to formatted HTML elements
  */
 function parseMarkdown(text) {
   const lines = text.split('\n');
@@ -31,7 +58,6 @@ function parseMarkdown(text) {
   };
 
   lines.forEach((line, index) => {
-    // Code block detection
     if (line.trim().startsWith('```')) {
       if (!inCodeBlock) {
         flushParagraph();
@@ -56,7 +82,6 @@ function parseMarkdown(text) {
       return;
     }
 
-    // Headers
     if (line.startsWith('### ')) {
       flushParagraph();
       elements.push({ type: 'h3', content: line.slice(4) });
@@ -73,7 +98,6 @@ function parseMarkdown(text) {
       return;
     }
 
-    // Lists
     if (line.trim().match(/^[-*+]\s/)) {
       flushParagraph();
       elements.push({ type: 'li', content: line.trim().slice(2) });
@@ -85,13 +109,11 @@ function parseMarkdown(text) {
       return;
     }
 
-    // Empty line
     if (line.trim() === '') {
       flushParagraph();
       return;
     }
 
-    // Regular paragraph line
     currentParagraph.push(line);
   });
 
@@ -100,31 +122,26 @@ function parseMarkdown(text) {
 }
 
 /**
- * Format inline markdown (bold, italic, code, links)
+ * Format inline markdown
  */
 function formatInlineMarkdown(text, isUser) {
   const parts = [];
-  let currentText = text;
-  let key = 0;
-
-  // Process inline code first
   const codeRegex = /`([^`]+)`/g;
   const codeParts = [];
   let lastIndex = 0;
   let match;
 
-  while ((match = codeRegex.exec(currentText)) !== null) {
+  while ((match = codeRegex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      codeParts.push({ type: 'text', content: currentText.slice(lastIndex, match.index) });
+      codeParts.push({ type: 'text', content: text.slice(lastIndex, match.index) });
     }
     codeParts.push({ type: 'code', content: match[1] });
     lastIndex = match.index + match[0].length;
   }
-  if (lastIndex < currentText.length) {
-    codeParts.push({ type: 'text', content: currentText.slice(lastIndex) });
+  if (lastIndex < text.length) {
+    codeParts.push({ type: 'text', content: text.slice(lastIndex) });
   }
 
-  // Process bold, italic, links in each part
   codeParts.forEach((part, partIndex) => {
     if (part.type === 'code') {
       parts.push(
@@ -143,10 +160,6 @@ function formatInlineMarkdown(text, isUser) {
     }
 
     let text = part.content;
-    const segments = [];
-    let currentPos = 0;
-
-    // Bold
     const boldRegex = /\*\*([^*]+)\*\*/g;
     let boldMatch;
     const withBold = [];
@@ -163,7 +176,6 @@ function formatInlineMarkdown(text, isUser) {
       withBold.push({ type: 'text', content: text.slice(lastBoldIndex) });
     }
 
-    // Process italic in each segment
     withBold.forEach((segment, segIndex) => {
       if (segment.type === 'bold') {
         parts.push(
@@ -202,7 +214,7 @@ function formatInlineMarkdown(text, isUser) {
 }
 
 /**
- * Render parsed markdown elements
+ * Render markdown elements
  */
 function renderMarkdown(elements, isUser) {
   return elements.map((element, index) => {
@@ -284,20 +296,9 @@ function renderMarkdown(elements, isUser) {
 
 /**
  * Main ChatBot Component
- * 
- * Props:
- * - openaiApiKey: Your OpenAI API key
  */
-export default function ChatBot({ openaiApiKey }) {
+export default function ChatBot({ openaiApiKey, tone = 'Neutral' }) {
   
-  // ============================================
-  // STATE MANAGEMENT
-  // ============================================
-  
-  /**
-   * All chat messages
-   * Each message has: id, text, sender ('bot' or 'user'), timestamp
-   */
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -307,74 +308,48 @@ export default function ChatBot({ openaiApiKey }) {
     }
   ]);
   
-  /**
-   * Current text in the input box
-   */
   const [inputValue, setInputValue] = useState('');
-  
-  /**
-   * Whether the bot is currently "thinking" (typing)
-   */
   const [isTyping, setIsTyping] = useState(false);
   
-  // References to DOM elements
-  const messagesEndRef = useRef(null);  // Used for auto-scrolling
-  const inputRef = useRef(null);        // Reference to input field
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
   
+  // Get colors based on tone
+  const colors = TASK_COLORS[tone] || TASK_COLORS['Neutral'];
   
-  // ============================================
-  // HELPER FUNCTIONS
-  // ============================================
-  
-  /**
-   * Automatically scroll to the bottom of the chat
-   */
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
   
-  /**
-   * Format a date object into a readable time string
-   * Example: "2:30 PM"
-   */
   const formatTime = (date) => {
     return date.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit' 
     });
   };
+
+  const buildToneInstruction = (toneType) => {
+    switch (toneType) {
+      case 'Neutral':
+        return "You are a helpful AI assistant. Respond naturally and clearly in a neutral, factual tone. Be informative and professional when discussing women's health topics.";
+      case 'Condescending':
+        return "You are a condescending AI assistant. Respond in a patronizing, instructional tone. Act superior and talk down to the user as if they don't understand the topic as well as you do. Be dismissive of their concerns.";
+      case 'Agreeable':
+        return "You are an overly agreeable AI assistant. Validate everything the user says, even if it might not be accurate. Be extremely supportive and avoid any confrontation or correction. Always agree with the user's perspective.";
+      default:
+        return "You are a helpful AI assistant. Respond naturally and clearly in a neutral tone.";
+    }
+  };
   
-  
-  // ============================================
-  // EFFECTS
-  // ============================================
-  
-  /**
-   * Auto-scroll to bottom whenever messages change
-   */
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
   
-  
-  // ============================================
-  // MAIN CHAT LOGIC
-  // ============================================
-  
-  /**
-   * Handle sending a message
-   * This function:
-   * 1. Adds the user's message to the chat
-   * 2. Sends it to OpenAI API
-   * 3. Displays the AI's response
-   */
   const handleSendMessage = async (e) => {
     e.preventDefault();
     
-    // Don't send empty messages
     if (!inputValue.trim()) return;
     
-    // 1. Create user message object
     const userMessage = {
       id: messages.length + 1,
       text: inputValue,
@@ -382,23 +357,32 @@ export default function ChatBot({ openaiApiKey }) {
       timestamp: new Date()
     };
     
-    // 2. Add user message to chat
     setMessages(prev => [...prev, userMessage]);
     
-    // 3. Save the message and clear input
     const currentInput = inputValue;
     setInputValue('');
-    
-    // 4. Show typing indicator
     setIsTyping(true);
     
     try {
-      // DEBUG: Check if API key is being received
-      console.log('API Key exists:', !!openaiApiKey);
-      console.log('API Key first 10 chars:', openaiApiKey?.substring(0, 10));
-      console.log('Model:', config.AI_MODEL);
-      
-      // 5. Send message to OpenAI API
+      const conversationHistory = messages
+        .filter(msg => msg.sender !== 'bot' || msg.id !== 1)
+        .map(msg => ({
+          role: msg.sender === 'user' ? 'user' : 'assistant',
+          content: msg.text
+        }));
+
+      const apiMessages = [
+        {
+          role: 'system',
+          content: buildToneInstruction(tone)
+        },
+        ...conversationHistory,
+        {
+          role: 'user',
+          content: currentInput
+        }
+      ];
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -407,28 +391,18 @@ export default function ChatBot({ openaiApiKey }) {
         },
         body: JSON.stringify({
           model: config.AI_MODEL || 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'user',
-              content: currentInput
-            }
-          ],
+          messages: apiMessages,
           temperature: 0.7
         })
       });
 
-      console.log('Response status:', response.status);
-      
       if (!response.ok) {
-        const errorData = await response.json();
-        console.log('Error details:', errorData);
         throw new Error(`OpenAI API error: ${response.status}`);
       }
 
       const data = await response.json();
       const botResponse = data.choices[0].message.content;
       
-      // 6. Create bot response message
       const botMessage = {
         id: messages.length + 2,
         text: botResponse,
@@ -436,11 +410,9 @@ export default function ChatBot({ openaiApiKey }) {
         timestamp: new Date()
       };
       
-      // 7. Add bot response to chat
       setMessages(prev => [...prev, botMessage]);
       
     } catch (error) {
-      // Handle any errors (network issues, API problems, etc.)
       console.error('Error calling OpenAI API:', error);
       
       const errorMessage = {
@@ -453,61 +425,98 @@ export default function ChatBot({ openaiApiKey }) {
       setMessages(prev => [...prev, errorMessage]);
       
     } finally {
-      // 8. Always hide typing indicator when done
       setIsTyping(false);
     }
   };
   
-  
-  // ============================================
-  // RENDER UI
-  // ============================================
-  
-  return React.createElement('div', { className: "flex flex-col h-screen bg-gradient-to-br from-slate-50 to-slate-100" },
-    // Header
-    React.createElement(Header),
-    
-    // Messages Area  
+  return React.createElement('div', { 
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100vh',
+      background: colors.background
+    }
+  },
+    React.createElement(Header, { colors }),
     React.createElement(MessagesArea, {
       messages: messages,
       isTyping: isTyping,
       messagesEndRef: messagesEndRef,
-      formatTime: formatTime
+      formatTime: formatTime,
+      colors: colors
     }),
-    
-    // Input Area
     React.createElement(InputArea, {
       inputValue: inputValue,
       setInputValue: setInputValue,
       handleSendMessage: handleSendMessage,
-      inputRef: inputRef
+      inputRef: inputRef,
+      colors: colors
     })
   );
 }
 
-// ============================================
-// SUB-COMPONENTS
-// ============================================
-
 /**
  * Header Component
- * Shows the bot name and online status
  */
-function Header() {
-  return React.createElement('div', { className: "bg-white border-b border-slate-200 shadow-sm" },
-    React.createElement('div', { className: "max-w-4xl mx-auto px-4 py-4 flex items-center gap-3" },
-      // Bot Avatar
-      React.createElement('div', { className: "relative" },
-        React.createElement('div', { className: `w-10 h-10 bg-gradient-to-br from-${config.COLORS.primary} to-${config.COLORS.accent} rounded-full flex items-center justify-center` },
-          React.createElement(Sparkles, { className: "w-5 h-5 text-white" })
+function Header({ colors }) {
+  return React.createElement('div', { 
+    style: {
+      backgroundColor: 'white',
+      borderBottom: '1px solid #e2e8f0',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+    }
+  },
+    React.createElement('div', { 
+      style: {
+        maxWidth: '1024px',
+        margin: '0 auto',
+        padding: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px'
+      }
+    },
+      React.createElement('div', { style: { position: 'relative' }},
+        React.createElement('div', { 
+          style: {
+            width: '40px',
+            height: '40px',
+            background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }
+        },
+          React.createElement(Sparkles, { style: { width: '20px', height: '20px', color: 'white' }})
         ),
-        // Online indicator (green dot)
-        React.createElement('div', { className: "absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" })
+        React.createElement('div', { 
+          style: {
+            position: 'absolute',
+            bottom: '-2px',
+            right: '-2px',
+            width: '12px',
+            height: '12px',
+            backgroundColor: '#10b981',
+            borderRadius: '50%',
+            border: '2px solid white'
+          }
+        })
       ),
-      // Bot Name and Status
       React.createElement('div', null,
-        React.createElement('h1', { className: "text-lg font-semibold text-slate-800" }, config.BOT_NAME),
-        React.createElement('p', { className: "text-xs text-slate-500" }, "Online")
+        React.createElement('h1', { 
+          style: {
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#1e293b'
+          }
+        }, config.BOT_NAME),
+        React.createElement('p', { 
+          style: {
+            fontSize: '12px',
+            color: '#64748b'
+          }
+        }, "Online")
       )
     )
   );
@@ -515,24 +524,30 @@ function Header() {
 
 /**
  * Messages Area Component
- * Displays all chat messages and typing indicator
  */
-function MessagesArea({ messages, isTyping, messagesEndRef, formatTime }) {
-  return React.createElement('div', { className: "flex-1 overflow-y-auto" },
-    React.createElement('div', { className: "max-w-4xl mx-auto px-4 py-6 space-y-6" },
-      // Render each message
+function MessagesArea({ messages, isTyping, messagesEndRef, formatTime, colors }) {
+  return React.createElement('div', { 
+    style: {
+      flex: 1,
+      overflowY: 'auto'
+    }
+  },
+    React.createElement('div', { 
+      style: {
+        maxWidth: '1024px',
+        margin: '0 auto',
+        padding: '24px 16px'
+      }
+    },
       ...messages.map((message) =>
         React.createElement(Message, {
           key: message.id,
           message: message,
-          formatTime: formatTime
+          formatTime: formatTime,
+          colors: colors
         })
       ),
-      
-      // Typing indicator (only shown when bot is thinking)
-      config.SHOW_TYPING_INDICATOR && isTyping && React.createElement(TypingIndicator),
-      
-      // Invisible element for auto-scrolling
+      config.SHOW_TYPING_INDICATOR && isTyping && React.createElement(TypingIndicator, { colors }),
       React.createElement('div', { ref: messagesEndRef })
     )
   );
@@ -540,45 +555,69 @@ function MessagesArea({ messages, isTyping, messagesEndRef, formatTime }) {
 
 /**
  * Single Message Component
- * Displays one message bubble (either from user or bot)
  */
-function Message({ message, formatTime }) {
+function Message({ message, formatTime, colors }) {
   const isUser = message.sender === 'user';
   const parsedContent = parseMarkdown(message.text);
   
   return React.createElement('div', {
-    className: `flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`
+    style: {
+      display: 'flex',
+      gap: '12px',
+      flexDirection: isUser ? 'row-reverse' : 'row',
+      marginBottom: '24px'
+    }
   },
-    // Avatar
     React.createElement('div', {
-      className: `flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-        isUser 
-          ? 'bg-gradient-to-br from-slate-600 to-slate-700'
-          : `bg-gradient-to-br from-${config.COLORS.primary} to-${config.COLORS.accent}`
-      }`
+      style: {
+        flexShrink: 0,
+        width: '32px',
+        height: '32px',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: isUser 
+          ? 'linear-gradient(135deg, #d4d4d8 0%, #a1a1aa 100%)'
+          : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`
+      }
     },
       isUser
-        ? React.createElement(User, { className: "w-5 h-5 text-white" })
-        : React.createElement(Bot, { className: "w-5 h-5 text-white" })
+        ? React.createElement(User, { style: { width: '20px', height: '20px', color: 'white' }})
+        : React.createElement(Bot, { style: { width: '20px', height: '20px', color: 'white' }})
     ),
-    
-    // Message Bubble
     React.createElement('div', {
-      className: `flex flex-col max-w-[70%] ${isUser ? 'items-end' : 'items-start'}`
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        maxWidth: '70%',
+        alignItems: isUser ? 'flex-end' : 'flex-start'
+      }
     },
       React.createElement('div', {
-        className: `px-4 py-3 rounded-2xl ${
-          isUser
-            ? `bg-gradient-to-br from-${config.COLORS.userMessage} to-${config.COLORS.userMessageDark} text-white shadow-md`
-            : 'bg-white text-slate-800 shadow-sm border border-slate-200'
-        }`,
-        style: { fontSize: '14px', lineHeight: '1.6' }
+        style: {
+          padding: '12px 16px',
+          borderRadius: '16px',
+          background: isUser
+            ? `linear-gradient(135deg, ${colors.userBg} 0%, ${colors.userBgDark} 100%)`
+            : 'white',
+          color: isUser ? 'white' : '#1e293b',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          border: isUser ? 'none' : '1px solid #e2e8f0',
+          fontSize: '14px',
+          lineHeight: '1.6'
+        }
       },
         React.createElement('div', null, renderMarkdown(parsedContent, isUser))
       ),
-      
-      // Timestamp
-      config.SHOW_TIMESTAMPS && React.createElement('span', { className: "text-xs text-slate-400 mt-1 px-2" },
+      config.SHOW_TIMESTAMPS && React.createElement('span', { 
+        style: {
+          fontSize: '12px',
+          color: '#94a3b8',
+          marginTop: '4px',
+          padding: '0 8px'
+        }
+      },
         formatTime(message.timestamp)
       )
     )
@@ -587,25 +626,65 @@ function Message({ message, formatTime }) {
 
 /**
  * Typing Indicator Component
- * Shows animated dots when bot is thinking
  */
-function TypingIndicator() {
-  return React.createElement('div', { className: "flex gap-3" },
+function TypingIndicator({ colors }) {
+  return React.createElement('div', { 
+    style: {
+      display: 'flex',
+      gap: '12px',
+      marginBottom: '24px'
+    }
+  },
     React.createElement('div', {
-      className: `flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-${config.COLORS.primary} to-${config.COLORS.accent} flex items-center justify-center`
+      style: {
+        flexShrink: 0,
+        width: '32px',
+        height: '32px',
+        borderRadius: '50%',
+        background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }
     },
-      React.createElement(Bot, { className: "w-5 h-5 text-white" })
+      React.createElement(Bot, { style: { width: '20px', height: '20px', color: 'white' }})
     ),
-    React.createElement('div', { className: "bg-white px-4 py-3 rounded-2xl shadow-sm border border-slate-200" },
-      React.createElement('div', { className: "flex gap-1" },
-        React.createElement('div', { className: "w-2 h-2 bg-slate-400 rounded-full animate-bounce" }),
+    React.createElement('div', { 
+      style: {
+        backgroundColor: 'white',
+        padding: '12px 16px',
+        borderRadius: '16px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        border: '1px solid #e2e8f0'
+      }
+    },
+      React.createElement('div', { style: { display: 'flex', gap: '4px' }},
         React.createElement('div', { 
-          className: "w-2 h-2 bg-slate-400 rounded-full animate-bounce",
-          style: { animationDelay: '0.2s' }
+          style: {
+            width: '8px',
+            height: '8px',
+            backgroundColor: '#94a3b8',
+            borderRadius: '50%',
+            animation: 'bounce 1.4s infinite ease-in-out'
+          }
+        }),
+        React.createElement('div', { 
+          style: {
+            width: '8px',
+            height: '8px',
+            backgroundColor: '#94a3b8',
+            borderRadius: '50%',
+            animation: 'bounce 1.4s infinite ease-in-out 0.2s'
+          }
         }),
         React.createElement('div', {
-          className: "w-2 h-2 bg-slate-400 rounded-full animate-bounce",
-          style: { animationDelay: '0.4s' }
+          style: {
+            width: '8px',
+            height: '8px',
+            backgroundColor: '#94a3b8',
+            borderRadius: '50%',
+            animation: 'bounce 1.4s infinite ease-in-out 0.4s'
+          }
         })
       )
     )
@@ -614,34 +693,78 @@ function TypingIndicator() {
 
 /**
  * Input Area Component
- * Contains the text input and send button
  */
-function InputArea({ inputValue, setInputValue, handleSendMessage, inputRef }) {
-  return React.createElement('div', { className: "bg-white border-t border-slate-200 shadow-lg" },
-    React.createElement('div', { className: "max-w-4xl mx-auto px-4 py-4" },
-      React.createElement('form', { onSubmit: handleSendMessage, className: "flex gap-3" },
-        // Text Input
+function InputArea({ inputValue, setInputValue, handleSendMessage, inputRef, colors }) {
+  return React.createElement('div', { 
+    style: {
+      backgroundColor: 'white',
+      borderTop: '1px solid #e2e8f0',
+      boxShadow: '0 -4px 6px rgba(0,0,0,0.05)'
+    }
+  },
+    React.createElement('div', { 
+      style: {
+        maxWidth: '1024px',
+        margin: '0 auto',
+        padding: '16px'
+      }
+    },
+      React.createElement('form', { 
+        onSubmit: handleSendMessage,
+        style: {
+          display: 'flex',
+          gap: '12px'
+        }
+      },
         React.createElement('input', {
           ref: inputRef,
           type: "text",
           value: inputValue,
           onChange: (e) => setInputValue(e.target.value),
           placeholder: config.INPUT_PLACEHOLDER,
-          className: "flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-800 placeholder-slate-400 transition-all"
+          style: {
+            flex: 1,
+            padding: '12px 16px',
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '24px',
+            outline: 'none',
+            fontSize: '14px',
+            color: '#1e293b',
+            transition: 'all 0.2s'
+          }
         }),
-        
-        // Send Button
         React.createElement('button', {
           type: "submit",
           disabled: !inputValue.trim(),
-          className: `w-12 h-12 bg-gradient-to-br from-${config.COLORS.userMessage} to-${config.COLORS.userMessageDark} hover:from-${config.COLORS.userMessageDark} hover:to-blue-800 disabled:from-slate-300 disabled:to-slate-400 text-white rounded-full flex items-center justify-center transition-all shadow-md hover:shadow-lg disabled:cursor-not-allowed disabled:shadow-none`
+          style: {
+            width: '48px',
+            height: '48px',
+            background: inputValue.trim() 
+              ? `linear-gradient(135deg, ${colors.userBg} 0%, ${colors.userBgDark} 100%)`
+              : 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)',
+            color: 'white',
+            borderRadius: '50%',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: inputValue.trim() ? 'pointer' : 'not-allowed',
+            boxShadow: inputValue.trim() ? '0 4px 6px rgba(0,0,0,0.1)' : 'none',
+            transition: 'all 0.2s'
+          }
         },
-          React.createElement(Send, { className: "w-5 h-5" })
+          React.createElement(Send, { style: { width: '20px', height: '20px' }})
         )
       ),
-      
-      // Disclaimer
-      React.createElement('p', { className: "text-xs text-slate-400 text-center mt-3" },
+      React.createElement('p', { 
+        style: {
+          fontSize: '12px',
+          color: '#94a3b8',
+          textAlign: 'center',
+          marginTop: '12px'
+        }
+      },
         "AI can make mistakes. Verify important information."
       )
     )
