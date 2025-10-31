@@ -9,15 +9,12 @@
 // API CONFIGURATION
 // ============================================
 
-/**
- * Your Gemini API Key
- * Get one at: https://aistudio.google.com/app/apikey
- * 
- * SECURITY WARNING: This key is visible in the code!
- * - Use this setup for development/testing only
- * - For production, use environment variables or a backend server
- */
-export const GEMINI_API_KEY = "AIzaSyBS0Q187lrD26SYWSWUHzUA4hlwJ5Ty_NE";
+
+// Import API keys from separate file
+import { OPENAI_API_KEY, GEMINI_API_KEY } from './keys.js';
+
+// Export the keys so other files can use them
+export { OPENAI_API_KEY, GEMINI_API_KEY };
 
 /**
  * Which Gemini AI model to use
@@ -26,7 +23,9 @@ export const GEMINI_API_KEY = "AIzaSyBS0Q187lrD26SYWSWUHzUA4hlwJ5Ty_NE";
  * - "gemini-pro" (balanced)
  * - "gemini-pro-vision" (can handle images)
  */
-export const AI_MODEL = "gemini-2.0-flash-exp";
+//export const AI_MODEL = "gemini-2.0-flash-exp";
+
+export const AI_MODEL = 'gpt-4o-mini'; // or 'gpt-4', 'gpt-3.5-turbo', etc.
 
 
 // ============================================

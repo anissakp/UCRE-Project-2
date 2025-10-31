@@ -4,7 +4,6 @@
  * This file contains the main ChatBot component.
  * It handles the UI and user interactions.
  */
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Sparkles } from 'lucide-react';
 import * as config from './config.js';
@@ -213,36 +212,51 @@ function renderMarkdown(elements, isUser) {
       case 'h1':
         return React.createElement('h1', {
           key,
-          style: { fontSize: '1.5em', fontWeight: 'bold', margin: '0.5em 0' }
+          style: { 
+            fontSize: '2.2em', 
+            fontWeight: 'bold', 
+            margin: '1em 0 0.6em 0',
+            lineHeight: '1.3'
+          }
         }, formatInlineMarkdown(element.content, isUser));
 
       case 'h2':
         return React.createElement('h2', {
           key,
-          style: { fontSize: '1.3em', fontWeight: 'bold', margin: '0.5em 0' }
+          style: { 
+            fontSize: '1.9em', 
+            fontWeight: 'bold', 
+            margin: '0.9em 0 0.5em 0',
+            lineHeight: '1.3'
+          }
         }, formatInlineMarkdown(element.content, isUser));
 
       case 'h3':
         return React.createElement('h3', {
           key,
-          style: { fontSize: '1.1em', fontWeight: 'bold', margin: '0.5em 0' }
+          style: { 
+            fontSize: '1.6em', 
+            fontWeight: 'bold', 
+            margin: '0.8em 0 0.4em 0',
+            lineHeight: '1.3'
+          }
         }, formatInlineMarkdown(element.content, isUser));
 
       case 'p':
         return React.createElement('p', {
           key,
-          style: { margin: '0.5em 0' }
+          style: { margin: '0.8em 0' }
         }, formatInlineMarkdown(element.content, isUser));
 
       case 'code':
         return React.createElement('pre', {
           key,
-          style: { margin: '0.5em 0' }
+          style: { margin: '1em 0' }
         }, React.createElement('code', {
           style: {
             display: 'block',
             backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : '#f1f5f9',
-            padding: '10px',
+            padding: '12px',
             borderRadius: '6px',
             fontFamily: 'monospace',
             fontSize: '0.9em',
@@ -253,13 +267,13 @@ function renderMarkdown(elements, isUser) {
       case 'li':
         return React.createElement('div', {
           key,
-          style: { marginLeft: '1.5em', margin: '0.25em 0' }
+          style: { marginLeft: '1.5em', margin: '0.4em 0 0.4em 1.5em' }
         }, '• ', formatInlineMarkdown(element.content, isUser));
 
       case 'oli':
         return React.createElement('div', {
           key,
-          style: { marginLeft: '1.5em', margin: '0.25em 0' }
+          style: { marginLeft: '1.5em', margin: '0.4em 0 0.4em 1.5em' }
         }, `${index + 1}. `, formatInlineMarkdown(element.content, isUser));
 
       default:
@@ -272,9 +286,9 @@ function renderMarkdown(elements, isUser) {
  * Main ChatBot Component
  * 
  * Props:
- * - geminiAI: The initialized Gemini AI instance
+ * - openaiApiKey: Your OpenAI API key
  */
-export default function ChatBot({ geminiAI }) {
+export default function ChatBot({ openaiApiKey }) {
   
   // ============================================
   // STATE MANAGEMENT
@@ -351,7 +365,7 @@ export default function ChatBot({ geminiAI }) {
    * Handle sending a message
    * This function:
    * 1. Adds the user's message to the chat
-   * 2. Sends it to Gemini AI
+   * 2. Sends it to OpenAI API
    * 3. Displays the AI's response
    */
   const handleSendMessage = async (e) => {
@@ -379,16 +393,45 @@ export default function ChatBot({ geminiAI }) {
     setIsTyping(true);
     
     try {
-      // 5. Send message to Gemini AI
-      const response = await geminiAI.models.generateContent({
-        model: config.AI_MODEL,
-        contents: currentInput,
+      // DEBUG: Check if API key is being received
+      console.log('API Key exists:', !!openaiApiKey);
+      console.log('API Key first 10 chars:', openaiApiKey?.substring(0, 10));
+      console.log('Model:', config.AI_MODEL);
+      
+      // 5. Send message to OpenAI API
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiApiKey}`
+        },
+        body: JSON.stringify({
+          model: config.AI_MODEL || 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'user',
+              content: currentInput
+            }
+          ],
+          temperature: 0.7
+        })
       });
+
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.log('Error details:', errorData);
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const botResponse = data.choices[0].message.content;
       
       // 6. Create bot response message
       const botMessage = {
         id: messages.length + 2,
-        text: response.text,
+        text: botResponse,
         sender: 'bot',
         timestamp: new Date()
       };
@@ -398,7 +441,7 @@ export default function ChatBot({ geminiAI }) {
       
     } catch (error) {
       // Handle any errors (network issues, API problems, etc.)
-      console.error('Error calling Gemini AI:', error);
+      console.error('Error calling OpenAI API:', error);
       
       const errorMessage = {
         id: messages.length + 2,
@@ -442,7 +485,6 @@ export default function ChatBot({ geminiAI }) {
   );
 }
 
-
 // ============================================
 // SUB-COMPONENTS
 // ============================================
@@ -471,7 +513,6 @@ function Header() {
   );
 }
 
-
 /**
  * Messages Area Component
  * Displays all chat messages and typing indicator
@@ -496,7 +537,6 @@ function MessagesArea({ messages, isTyping, messagesEndRef, formatTime }) {
     )
   );
 }
-
 
 /**
  * Single Message Component
@@ -545,7 +585,6 @@ function Message({ message, formatTime }) {
   );
 }
 
-
 /**
  * Typing Indicator Component
  * Shows animated dots when bot is thinking
@@ -572,7 +611,6 @@ function TypingIndicator() {
     )
   );
 }
-
 
 /**
  * Input Area Component
