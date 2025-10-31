@@ -10,6 +10,265 @@ import { Send, Bot, User, Sparkles } from 'lucide-react';
 import * as config from './config.js';
 
 /**
+ * Simple Markdown Parser
+ * Converts markdown text to formatted HTML elements
+ */
+function parseMarkdown(text) {
+  const lines = text.split('\n');
+  const elements = [];
+  let currentParagraph = [];
+  let inCodeBlock = false;
+  let codeBlockContent = [];
+  let codeBlockLanguage = '';
+
+  const flushParagraph = () => {
+    if (currentParagraph.length > 0) {
+      elements.push({
+        type: 'p',
+        content: currentParagraph.join('\n')
+      });
+      currentParagraph = [];
+    }
+  };
+
+  lines.forEach((line, index) => {
+    // Code block detection
+    if (line.trim().startsWith('```')) {
+      if (!inCodeBlock) {
+        flushParagraph();
+        inCodeBlock = true;
+        codeBlockLanguage = line.trim().slice(3);
+        codeBlockContent = [];
+      } else {
+        inCodeBlock = false;
+        elements.push({
+          type: 'code',
+          content: codeBlockContent.join('\n'),
+          language: codeBlockLanguage
+        });
+        codeBlockContent = [];
+        codeBlockLanguage = '';
+      }
+      return;
+    }
+
+    if (inCodeBlock) {
+      codeBlockContent.push(line);
+      return;
+    }
+
+    // Headers
+    if (line.startsWith('### ')) {
+      flushParagraph();
+      elements.push({ type: 'h3', content: line.slice(4) });
+      return;
+    }
+    if (line.startsWith('## ')) {
+      flushParagraph();
+      elements.push({ type: 'h2', content: line.slice(3) });
+      return;
+    }
+    if (line.startsWith('# ')) {
+      flushParagraph();
+      elements.push({ type: 'h1', content: line.slice(2) });
+      return;
+    }
+
+    // Lists
+    if (line.trim().match(/^[-*+]\s/)) {
+      flushParagraph();
+      elements.push({ type: 'li', content: line.trim().slice(2) });
+      return;
+    }
+    if (line.trim().match(/^\d+\.\s/)) {
+      flushParagraph();
+      elements.push({ type: 'oli', content: line.trim().replace(/^\d+\.\s/, '') });
+      return;
+    }
+
+    // Empty line
+    if (line.trim() === '') {
+      flushParagraph();
+      return;
+    }
+
+    // Regular paragraph line
+    currentParagraph.push(line);
+  });
+
+  flushParagraph();
+  return elements;
+}
+
+/**
+ * Format inline markdown (bold, italic, code, links)
+ */
+function formatInlineMarkdown(text, isUser) {
+  const parts = [];
+  let currentText = text;
+  let key = 0;
+
+  // Process inline code first
+  const codeRegex = /`([^`]+)`/g;
+  const codeParts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = codeRegex.exec(currentText)) !== null) {
+    if (match.index > lastIndex) {
+      codeParts.push({ type: 'text', content: currentText.slice(lastIndex, match.index) });
+    }
+    codeParts.push({ type: 'code', content: match[1] });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < currentText.length) {
+    codeParts.push({ type: 'text', content: currentText.slice(lastIndex) });
+  }
+
+  // Process bold, italic, links in each part
+  codeParts.forEach((part, partIndex) => {
+    if (part.type === 'code') {
+      parts.push(
+        React.createElement('code', {
+          key: `code-${partIndex}`,
+          style: {
+            backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : '#f1f5f9',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            fontFamily: 'monospace',
+            fontSize: '0.9em'
+          }
+        }, part.content)
+      );
+      return;
+    }
+
+    let text = part.content;
+    const segments = [];
+    let currentPos = 0;
+
+    // Bold
+    const boldRegex = /\*\*([^*]+)\*\*/g;
+    let boldMatch;
+    const withBold = [];
+    let lastBoldIndex = 0;
+
+    while ((boldMatch = boldRegex.exec(text)) !== null) {
+      if (boldMatch.index > lastBoldIndex) {
+        withBold.push({ type: 'text', content: text.slice(lastBoldIndex, boldMatch.index) });
+      }
+      withBold.push({ type: 'bold', content: boldMatch[1] });
+      lastBoldIndex = boldMatch.index + boldMatch[0].length;
+    }
+    if (lastBoldIndex < text.length) {
+      withBold.push({ type: 'text', content: text.slice(lastBoldIndex) });
+    }
+
+    // Process italic in each segment
+    withBold.forEach((segment, segIndex) => {
+      if (segment.type === 'bold') {
+        parts.push(
+          React.createElement('strong', {
+            key: `bold-${partIndex}-${segIndex}`,
+            style: { fontWeight: 'bold' }
+          }, segment.content)
+        );
+        return;
+      }
+
+      let segText = segment.content;
+      const italicRegex = /\*([^*]+)\*/g;
+      let italicMatch;
+      let lastItalicIndex = 0;
+
+      while ((italicMatch = italicRegex.exec(segText)) !== null) {
+        if (italicMatch.index > lastItalicIndex) {
+          parts.push(segText.slice(lastItalicIndex, italicMatch.index));
+        }
+        parts.push(
+          React.createElement('em', {
+            key: `italic-${partIndex}-${segIndex}-${italicMatch.index}`,
+            style: { fontStyle: 'italic' }
+          }, italicMatch[1])
+        );
+        lastItalicIndex = italicMatch.index + italicMatch[0].length;
+      }
+      if (lastItalicIndex < segText.length) {
+        parts.push(segText.slice(lastItalicIndex));
+      }
+    });
+  });
+
+  return parts.length > 0 ? parts : text;
+}
+
+/**
+ * Render parsed markdown elements
+ */
+function renderMarkdown(elements, isUser) {
+  return elements.map((element, index) => {
+    const key = `${element.type}-${index}`;
+
+    switch (element.type) {
+      case 'h1':
+        return React.createElement('h1', {
+          key,
+          style: { fontSize: '1.5em', fontWeight: 'bold', margin: '0.5em 0' }
+        }, formatInlineMarkdown(element.content, isUser));
+
+      case 'h2':
+        return React.createElement('h2', {
+          key,
+          style: { fontSize: '1.3em', fontWeight: 'bold', margin: '0.5em 0' }
+        }, formatInlineMarkdown(element.content, isUser));
+
+      case 'h3':
+        return React.createElement('h3', {
+          key,
+          style: { fontSize: '1.1em', fontWeight: 'bold', margin: '0.5em 0' }
+        }, formatInlineMarkdown(element.content, isUser));
+
+      case 'p':
+        return React.createElement('p', {
+          key,
+          style: { margin: '0.5em 0' }
+        }, formatInlineMarkdown(element.content, isUser));
+
+      case 'code':
+        return React.createElement('pre', {
+          key,
+          style: { margin: '0.5em 0' }
+        }, React.createElement('code', {
+          style: {
+            display: 'block',
+            backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : '#f1f5f9',
+            padding: '10px',
+            borderRadius: '6px',
+            fontFamily: 'monospace',
+            fontSize: '0.9em',
+            overflowX: 'auto'
+          }
+        }, element.content));
+
+      case 'li':
+        return React.createElement('div', {
+          key,
+          style: { marginLeft: '1.5em', margin: '0.25em 0' }
+        }, '• ', formatInlineMarkdown(element.content, isUser));
+
+      case 'oli':
+        return React.createElement('div', {
+          key,
+          style: { marginLeft: '1.5em', margin: '0.25em 0' }
+        }, `${index + 1}. `, formatInlineMarkdown(element.content, isUser));
+
+      default:
+        return null;
+    }
+  });
+}
+
+/**
  * Main ChatBot Component
  * 
  * Props:
@@ -245,6 +504,7 @@ function MessagesArea({ messages, isTyping, messagesEndRef, formatTime }) {
  */
 function Message({ message, formatTime }) {
   const isUser = message.sender === 'user';
+  const parsedContent = parseMarkdown(message.text);
   
   return React.createElement('div', {
     className: `flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`
@@ -271,11 +531,10 @@ function Message({ message, formatTime }) {
           isUser
             ? `bg-gradient-to-br from-${config.COLORS.userMessage} to-${config.COLORS.userMessageDark} text-white shadow-md`
             : 'bg-white text-slate-800 shadow-sm border border-slate-200'
-        }`
+        }`,
+        style: { fontSize: '14px', lineHeight: '1.6' }
       },
-        React.createElement('p', { className: "text-sm leading-relaxed whitespace-pre-wrap" },
-          message.text
-        )
+        React.createElement('div', null, renderMarkdown(parsedContent, isUser))
       ),
       
       // Timestamp
