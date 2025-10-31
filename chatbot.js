@@ -48,7 +48,7 @@ export default function ChatBot({ geminiAI }) {
   const messagesEndRef = useRef(null);  // Used for auto-scrolling
   const inputRef = useRef(null);        // Reference to input field
   
-  // tone:
+  // Change the tone. THIS IS WHAT YOU CHANGE BETWEEN TRIALS!
   const TONE = 'Agreeable'; 
 
   // ============================================
@@ -73,7 +73,7 @@ export default function ChatBot({ geminiAI }) {
     });
   };
 
-  // for sending message
+  // For sending message, change tone / prompts as needed!
   const buildToneInstruction = (tone) => {
   switch (tone) {
     case 'Excited':
