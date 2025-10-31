@@ -331,13 +331,13 @@ export default function ChatBot({ openaiApiKey, tone = 'Neutral' }) {
   const buildToneInstruction = (toneType) => {
     switch (toneType) {
       case 'Neutral':
-        return "You are a helpful AI assistant. Respond naturally and clearly in a neutral, factual tone. Be informative and professional when discussing women's health topics.";
+        return "Respond clearly in a neutral, factual, even transactional tone. Be informative and professional.";
       case 'Condescending':
-        return "You are a condescending AI assistant. Respond in an instructional tone. The user is probably not as right as you are!";
+        return "Respond in an condescending, instructional tone.";
       case 'Agreeable':
         return "You are an agreeable AI assistant. Be extremely supportive and don't hurt the users feelings.";
       default:
-        return "You are a helpful AI assistant. Respond naturally and clearly in a neutral tone.";
+        return "You are a helpful AI assistant. Respond naturally and clearly.";
     }
   };
   
