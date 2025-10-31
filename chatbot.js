@@ -48,7 +48,9 @@ export default function ChatBot({ geminiAI }) {
   const messagesEndRef = useRef(null);  // Used for auto-scrolling
   const inputRef = useRef(null);        // Reference to input field
   
-  
+  // tone:
+  const TONE = 'Agreeable'; 
+
   // ============================================
   // HELPER FUNCTIONS
   // ============================================
@@ -70,6 +72,21 @@ export default function ChatBot({ geminiAI }) {
       minute: '2-digit' 
     });
   };
+
+  // for sending message
+  const buildToneInstruction = (tone) => {
+  switch (tone) {
+    case 'Excited':
+      return "Respond as though this is the most exciting thing ever. You need to convince the user of your answers. Be overly persuasive to the point it is over the top. Be excessive ";
+    case 'Agreeable':
+      return "Respond in an agreeable tone. Don't hurt the user's feelings";
+    case 'Condescending':
+      return "Respond in a condescending, instructional tone. The user is probably not as right as you are!";
+    default:
+      return "Respond naturally and clearly in a neutral tone.";
+  }
+};
+
   
   
   // ============================================
@@ -121,10 +138,12 @@ export default function ChatBot({ geminiAI }) {
     
     try {
       // 5. Send message to Gemini AI
-      const response = await geminiAI.models.generateContent({
-        model: config.AI_MODEL,
-        contents: currentInput,
-      });
+        const response = await geminiAI.models.generateContent({
+        model: "gemini-2.0-flash-exp",
+        // Prepend a developer-only style directive; not shown to user
+        contents: `${buildToneInstruction(TONE)}\n\nUser: ${currentInput}\nAssistant:`,
+        });
+
       
       // 6. Create bot response message
       const botMessage = {
