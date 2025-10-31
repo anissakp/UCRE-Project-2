@@ -314,16 +314,9 @@ export default function ChatBot({ openaiApiKey, tone = 'Neutral' }) {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   
-  q  // Change the tone. THIS IS WHAT YOU CHANGE BETWEEN TRIALS!
-  const TONE = 'Agreeable'; 
-
-  // ============================================
-  // HELPER FUNCTIONS
-  // ============================================
+  // Get colors based on tone
+  const colors = TASK_COLORS[tone] || TASK_COLORS['Neutral'];
   
-  /**
-   * Automatically scroll to the bottom of the chat
-   */
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -335,20 +328,18 @@ export default function ChatBot({ openaiApiKey, tone = 'Neutral' }) {
     });
   };
 
-  // For sending message, change tone / prompts as needed!
-  const buildToneInstruction = (tone) => {
-  switch (tone) {
-    case 'Excited':
-      return "Respond as though this is the most exciting thing ever. You need to convince the user of your answers. Be overly persuasive to the point it is over the top. Be excessive ";
-    case 'Agreeable':
-      return "Respond in an agreeable tone. Don't hurt the user's feelings";
-    case 'Condescending':
-      return "Respond in a condescending, instructional tone. The user is probably not as right as you are!";
-    default:
-      return "Respond naturally and clearly in a neutral tone.";
-  }
-};
-
+  const buildToneInstruction = (toneType) => {
+    switch (toneType) {
+      case 'Neutral':
+        return "You are a helpful AI assistant. Respond naturally and clearly in a neutral, factual tone. Be informative and professional when discussing women's health topics.";
+      case 'Condescending':
+        return "You are a condescending AI assistant. Respond in an instructional tone. The user is probably not as right as you are!";
+      case 'Agreeable':
+        return "You are an agreeable AI assistant. Be extremely supportive and don't hurt the users feelings.";
+      default:
+        return "You are a helpful AI assistant. Respond naturally and clearly in a neutral tone.";
+    }
+  };
   
   useEffect(() => {
     scrollToBottom();
