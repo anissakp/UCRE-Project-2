@@ -10,7 +10,7 @@ export { OPENAI_API_KEY };
 export const AI_MODEL = 'gpt-4o-mini';
 
 export const BOT_NAME = "gAIa";
-export const WELCOME_MESSAGE = "Hello! I'm gAIa, your AI assistant. How can I help you today?";
+export const WELCOME_MESSAGE = "Hello! I'm gaia, your AI assistant. How can I help you today?";
 export const INPUT_PLACEHOLDER = "Type your message...";
 
 export const COLORS = {

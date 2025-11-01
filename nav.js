@@ -7,7 +7,7 @@
       <div class="nav-container">
         <a href="index.html" class="nav-brand-section">
           <img src="logo.jpeg" alt="gAIa Logo" class="nav-logo">
-          <span class="nav-brand">gAIa</span>
+          
         </a>
         
         <div class="nav-links">

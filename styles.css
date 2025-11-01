@@ -129,14 +129,16 @@ body::before {
 }
 
 .welcome-title {
+  font-family: 'Prata', serif;
   font-size: 2.5rem;
-  font-weight: 700;
+  font-weight: 400;
   color: #1e293b;
   letter-spacing: -0.5px;
   margin-bottom: 0.75rem;
 }
 
 .tagline {
+  font-family: 'Prata', serif;
   font-size: 1.15rem;
   line-height: 1.8;
   color: #475569;
@@ -154,6 +156,7 @@ body::before {
 }
 
 .task-tile {
+  font-family: 'Prata', serif;
   background: white;
   padding: 3rem 2rem;
   border-radius: 16px;
