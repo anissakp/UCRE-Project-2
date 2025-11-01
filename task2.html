@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>gAIa - Task 2</title>
   
-  <link rel="stylesheet" href="nav.css">
-  
   <style>
     * {
       margin: 0;
@@ -20,6 +18,69 @@
       height: 100vh;
       overflow: hidden;
     }
+
+    /* Navigation Styles */
+    .site-nav {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0 2rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 70px;
+      overflow: hidden;
+    }
+
+    .nav-brand-section {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+    }
+
+    .nav-logo {
+      width: 45px !important;
+      height: 45px !important;
+      max-width: 45px !important;
+      max-height: 45px !important;
+      min-width: 45px !important;
+      min-height: 45px !important;
+      object-fit: contain;
+      flex-shrink: 0;
+      display: block;
+    }
+
+    .nav-brand {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1e293b;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-home-btn {
+      padding: 0.5rem 1.25rem;
+      color: #fff;
+      background: #3b82f6;
+      text-decoration: none;
+      font-weight: 600;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      font-size: 0.95rem;
+    }
+
+    .nav-home-btn:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+    }
   </style>
   
   <!-- React and ReactDOM -->
@@ -30,13 +91,11 @@
   <!-- Navigation Header -->
   <nav class="site-nav">
     <div class="nav-container">
-      <a href="index.html" class="nav-brand">gAIa</a>
-      <ul class="nav-links">
-        <li><a href="index.html">Home</a></li>
-        <li><a href="task1.html">Task 1</a></li>
-        <li><a href="task2.html" class="active">Task 2</a></li>
-        <li><a href="task3.html">Task 3</a></li>
-      </ul>
+      <a href="index.html" class="nav-brand-section">
+        <img src="logo.jpeg" alt="gAIa Logo" class="nav-logo">
+        <span class="nav-brand">gAIa</span>
+      </a>
+      <a href="index.html" class="nav-home-btn">← Home</a>
     </div>
   </nav>
 

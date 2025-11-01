@@ -297,7 +297,7 @@ function renderMarkdown(elements, isUser) {
 /**
  * Main ChatBot Component
  */
-export default function ChatBot({ openaiApiKey, tone = 'Neutral' }) {
+export default function ChatBot({ openaiApiKey, tone = 'Neutral', botIcon = 'logo.jpeg' }) {
   
   const [messages, setMessages] = useState([
     {
@@ -437,13 +437,14 @@ export default function ChatBot({ openaiApiKey, tone = 'Neutral' }) {
       background: colors.background
     }
   },
-    React.createElement(Header, { colors }),
+    React.createElement(Header, { colors, botIcon }),
     React.createElement(MessagesArea, {
       messages: messages,
       isTyping: isTyping,
       messagesEndRef: messagesEndRef,
       formatTime: formatTime,
-      colors: colors
+      colors: colors,
+      botIcon: botIcon
     }),
     React.createElement(InputArea, {
       inputValue: inputValue,
@@ -458,7 +459,7 @@ export default function ChatBot({ openaiApiKey, tone = 'Neutral' }) {
 /**
  * Header Component
  */
-function Header({ colors }) {
+function Header({ colors, botIcon }) {
   return React.createElement('div', { 
     style: {
       backgroundColor: 'white',
@@ -477,19 +478,16 @@ function Header({ colors }) {
       }
     },
       React.createElement('div', { style: { position: 'relative' }},
-        React.createElement('div', { 
+        React.createElement('img', { 
+          src: botIcon,
+          alt: 'Bot Icon',
           style: {
             width: '40px',
             height: '40px',
-            background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
             borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
+            objectFit: 'cover'
           }
-        },
-          React.createElement(Sparkles, { style: { width: '20px', height: '20px', color: 'white' }})
-        ),
+        }),
         React.createElement('div', { 
           style: {
             position: 'absolute',
@@ -525,7 +523,7 @@ function Header({ colors }) {
 /**
  * Messages Area Component
  */
-function MessagesArea({ messages, isTyping, messagesEndRef, formatTime, colors }) {
+function MessagesArea({ messages, isTyping, messagesEndRef, formatTime, colors, botIcon }) {
   return React.createElement('div', { 
     style: {
       flex: 1,
@@ -544,10 +542,11 @@ function MessagesArea({ messages, isTyping, messagesEndRef, formatTime, colors }
           key: message.id,
           message: message,
           formatTime: formatTime,
-          colors: colors
+          colors: colors,
+          botIcon: botIcon
         })
       ),
-      config.SHOW_TYPING_INDICATOR && isTyping && React.createElement(TypingIndicator, { colors }),
+      config.SHOW_TYPING_INDICATOR && isTyping && React.createElement(TypingIndicator, { colors, botIcon }),
       React.createElement('div', { ref: messagesEndRef })
     )
   );
@@ -556,7 +555,7 @@ function MessagesArea({ messages, isTyping, messagesEndRef, formatTime, colors }
 /**
  * Single Message Component
  */
-function Message({ message, formatTime, colors }) {
+function Message({ message, formatTime, colors, botIcon }) {
   const isUser = message.sender === 'user';
   const parsedContent = parseMarkdown(message.text);
   
@@ -568,24 +567,32 @@ function Message({ message, formatTime, colors }) {
       marginBottom: '24px'
     }
   },
-    React.createElement('div', {
-      style: {
-        flexShrink: 0,
-        width: '32px',
-        height: '32px',
-        borderRadius: '50%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: isUser 
-          ? 'linear-gradient(135deg, #d4d4d8 0%, #a1a1aa 100%)'
-          : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`
-      }
-    },
-      isUser
-        ? React.createElement(User, { style: { width: '20px', height: '20px', color: 'white' }})
-        : React.createElement(Bot, { style: { width: '20px', height: '20px', color: 'white' }})
-    ),
+    isUser 
+      ? React.createElement('div', {
+          style: {
+            flexShrink: 0,
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'linear-gradient(135deg, #d4d4d8 0%, #a1a1aa 100%)'
+          }
+        },
+        React.createElement(User, { style: { width: '20px', height: '20px', color: 'white' }})
+      )
+      : React.createElement('img', {
+          src: botIcon,
+          alt: 'Bot',
+          style: {
+            flexShrink: 0,
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            objectFit: 'cover'
+          }
+        }),
     React.createElement('div', {
       style: {
         display: 'flex',
@@ -627,7 +634,7 @@ function Message({ message, formatTime, colors }) {
 /**
  * Typing Indicator Component
  */
-function TypingIndicator({ colors }) {
+function TypingIndicator({ colors, botIcon }) {
   return React.createElement('div', { 
     style: {
       display: 'flex',
@@ -635,20 +642,17 @@ function TypingIndicator({ colors }) {
       marginBottom: '24px'
     }
   },
-    React.createElement('div', {
+    React.createElement('img', {
+      src: botIcon,
+      alt: 'Bot',
       style: {
         flexShrink: 0,
         width: '32px',
         height: '32px',
         borderRadius: '50%',
-        background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
+        objectFit: 'cover'
       }
-    },
-      React.createElement(Bot, { style: { width: '20px', height: '20px', color: 'white' }})
-    ),
+    }),
     React.createElement('div', { 
       style: {
         backgroundColor: 'white',

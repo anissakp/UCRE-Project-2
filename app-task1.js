@@ -15,7 +15,8 @@ const root = createRoot(rootElement);
 root.render(
   React.createElement(ChatBot, { 
     openaiApiKey: OPENAI_API_KEY,
-    tone: 'Neutral'  // Task 1 uses Neutral tone
+    tone: 'Neutral',
+    botIcon: 'blue.png'  // Add this line
   })
 );
 
