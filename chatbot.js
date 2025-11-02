@@ -297,7 +297,7 @@ function renderMarkdown(elements, isUser) {
 /**
  * Main ChatBot Component
  */
-export default function ChatBot({ openaiApiKey, tone = 'Neutral', botIcon = 'logo.jpeg' }) {
+export default function ChatBot({ tone = 'Neutral', botIcon = 'logo.jpeg' }) {
   
   const [messages, setMessages] = useState([
     {
@@ -383,21 +383,21 @@ export default function ChatBot({ openaiApiKey, tone = 'Neutral', botIcon = 'log
         }
       ];
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      // Call our Vercel API endpoint instead of OpenAI directly
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiApiKey}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: config.AI_MODEL || 'gpt-4o-mini',
           messages: apiMessages,
+          model: config.AI_MODEL || 'gpt-4o-mini',
           temperature: 0.7
         })
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+        throw new Error(`API error: ${response.status}`);
       }
 
       const data = await response.json();
@@ -413,7 +413,7 @@ export default function ChatBot({ openaiApiKey, tone = 'Neutral', botIcon = 'log
       setMessages(prev => [...prev, botMessage]);
       
     } catch (error) {
-      console.error('Error calling OpenAI API:', error);
+      console.error('Error calling API:', error);
       
       const errorMessage = {
         id: messages.length + 2,
@@ -433,11 +433,11 @@ export default function ChatBot({ openaiApiKey, tone = 'Neutral', botIcon = 'log
     style: {
       display: 'flex',
       flexDirection: 'column',
-      height: 'calc(100vh - 70px)', // Account for fixed nav
-      background: colors.background,
-      marginTop: '70px' // Push down for fixed nav
+      height: '100vh',
+      background: colors.background
     }
   },
+    React.createElement(Header, { colors, botIcon }),
     React.createElement(MessagesArea, {
       messages: messages,
       isTyping: isTyping,
@@ -453,6 +453,70 @@ export default function ChatBot({ openaiApiKey, tone = 'Neutral', botIcon = 'log
       inputRef: inputRef,
       colors: colors
     })
+  );
+}
+
+/**
+ * Header Component
+ */
+function Header({ colors, botIcon }) {
+  return React.createElement('div', { 
+    style: {
+      backgroundColor: 'white',
+      borderBottom: '1px solid #e2e8f0',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+    }
+  },
+    React.createElement('div', { 
+      style: {
+        maxWidth: '1024px',
+        margin: '0 auto',
+        padding: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px'
+      }
+    },
+      React.createElement('div', { style: { position: 'relative' }},
+        React.createElement('img', { 
+          src: botIcon,
+          alt: 'Bot Icon',
+          style: {
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            objectFit: 'cover'
+          }
+        }),
+        React.createElement('div', { 
+          style: {
+            position: 'absolute',
+            bottom: '-2px',
+            right: '-2px',
+            width: '12px',
+            height: '12px',
+            backgroundColor: '#10b981',
+            borderRadius: '50%',
+            border: '2px solid white'
+          }
+        })
+      ),
+      React.createElement('div', null,
+        React.createElement('h1', { 
+          style: {
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#1e293b'
+          }
+        }, config.BOT_NAME),
+        React.createElement('p', { 
+          style: {
+            fontSize: '12px',
+            color: '#64748b'
+          }
+        }, "Online")
+      )
+    )
   );
 }
 
