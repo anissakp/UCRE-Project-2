@@ -4,9 +4,6 @@
  * Configuration settings for the chatbot.
  */
 
-import { OPENAI_API_KEY } from './keys.js';
-export { OPENAI_API_KEY };
-
 export const AI_MODEL = 'gpt-4o-mini';
 
 export const BOT_NAME = "gAIa";
