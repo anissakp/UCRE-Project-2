@@ -37,6 +37,137 @@ const TASK_COLORS = {
 };
 
 /**
+ * API Key Prompt Component
+ */
+function ApiKeyPrompt({ onSubmit, colors }) {
+  const [apiKey, setApiKey] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!apiKey.trim()) {
+      setError('Please enter an API key');
+      return;
+    }
+    if (!apiKey.startsWith('sk-')) {
+      setError('API key should start with "sk-"');
+      return;
+    }
+    onSubmit(apiKey.trim());
+  };
+
+  return React.createElement('div', {
+    style: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999,
+      padding: '20px'
+    }
+  },
+    React.createElement('div', {
+      style: {
+        background: 'white',
+        borderRadius: '16px',
+        padding: '32px',
+        maxWidth: '500px',
+        width: '100%',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+      }
+    },
+      React.createElement('h2', {
+        style: {
+          fontSize: '24px',
+          fontWeight: '700',
+          color: '#1e293b',
+          marginBottom: '12px'
+        }
+      }, 'Enter Your OpenAI API Key'),
+      React.createElement('p', {
+        style: {
+          fontSize: '14px',
+          color: '#64748b',
+          marginBottom: '24px',
+          lineHeight: '1.6'
+        }
+      }, 'To use this chatbot, you\'ll need to provide your own OpenAI API key. Your key will only be stored in your browser session and never sent anywhere except OpenAI.'),
+      React.createElement('form', {
+        onSubmit: handleSubmit
+      },
+        React.createElement('input', {
+          type: 'password',
+          value: apiKey,
+          onChange: (e) => {
+            setApiKey(e.target.value);
+            setError('');
+          },
+          placeholder: 'sk-...',
+          style: {
+            width: '100%',
+            padding: '12px 16px',
+            fontSize: '14px',
+            border: `2px solid ${error ? '#ef4444' : '#e2e8f0'}`,
+            borderRadius: '8px',
+            outline: 'none',
+            marginBottom: '8px',
+            fontFamily: 'monospace'
+          }
+        }),
+        error && React.createElement('p', {
+          style: {
+            fontSize: '12px',
+            color: '#ef4444',
+            marginBottom: '16px'
+          }
+        }, error),
+        React.createElement('button', {
+          type: 'submit',
+          style: {
+            width: '100%',
+            padding: '12px',
+            background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '16px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            marginTop: '8px'
+          }
+        }, 'Start Chatting'),
+        React.createElement('p', {
+          style: {
+            fontSize: '12px',
+            color: '#94a3b8',
+            marginTop: '16px',
+            textAlign: 'center'
+          }
+        }, 
+          'Don\'t have an API key? ',
+          React.createElement('a', {
+            href: 'https://platform.openai.com/api-keys',
+            target: '_blank',
+            rel: 'noopener noreferrer',
+            style: {
+              color: colors.primary,
+              textDecoration: 'underline'
+            }
+          }, 'Get one here')
+        )
+      )
+    )
+  );
+}
+
+// [Rest of your existing functions: parseMarkdown, formatInlineMarkdown, renderMarkdown - keep them exactly as they are]
+
+/**
  * Simple Markdown Parser
  */
 function parseMarkdown(text) {
@@ -297,8 +428,8 @@ function renderMarkdown(elements, isUser) {
 /**
  * Main ChatBot Component
  */
-export default function ChatBot({ openaiApiKey, tone = 'Neutral', botIcon = 'logo.jpeg' }) {
-  
+export default function ChatBot({ tone = 'Neutral', botIcon = 'logo.jpeg' }) {
+  const [apiKey, setApiKey] = useState(null);
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -344,6 +475,14 @@ export default function ChatBot({ openaiApiKey, tone = 'Neutral', botIcon = 'log
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  // Show API key prompt if not set
+  if (!apiKey) {
+    return React.createElement(ApiKeyPrompt, { 
+      onSubmit: setApiKey,
+      colors: colors
+    });
+  }
   
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -387,7 +526,7 @@ export default function ChatBot({ openaiApiKey, tone = 'Neutral', botIcon = 'log
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiApiKey}`
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           model: config.AI_MODEL || 'gpt-4o-mini',
@@ -433,9 +572,9 @@ export default function ChatBot({ openaiApiKey, tone = 'Neutral', botIcon = 'log
     style: {
       display: 'flex',
       flexDirection: 'column',
-      height: 'calc(100vh - 70px)', // Account for fixed nav
+      height: 'calc(100vh - 70px)',
       background: colors.background,
-      marginTop: '70px' // Push down for fixed nav
+      marginTop: '70px'
     }
   },
     React.createElement(MessagesArea, {
@@ -455,6 +594,8 @@ export default function ChatBot({ openaiApiKey, tone = 'Neutral', botIcon = 'log
     })
   );
 }
+
+// [Keep all your existing components: MessagesArea, Message, TypingIndicator, InputArea exactly as they are]
 
 /**
  * Messages Area Component
