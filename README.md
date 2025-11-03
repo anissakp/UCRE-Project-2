@@ -27,9 +27,6 @@ Using Python (Built-in):
 ```bash
 # For Python 3
 python3 -m http.server 8000
-
-# For Python 2
-python -m SimpleHTTPServer 8000
 ```
 
 Then open your browser and go to: `http://localhost:8000/index.html`
