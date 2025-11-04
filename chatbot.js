@@ -96,7 +96,7 @@ function ApiKeyPrompt({ onSubmit, colors }) {
           marginBottom: '24px',
           lineHeight: '1.6'
         }
-      }, 'To use this chatbot, you\'ll need to provide your own OpenAI API key. Your key will only be stored in your browser session and never sent anywhere except OpenAI.'),
+      }, 'To use this chatbot, you\'ll need to provide your own OpenAI API key.'),
       React.createElement('form', {
         onSubmit: handleSubmit
       },
