@@ -1,6 +1,9 @@
 # gAIa
 This project was completed as part of Carnegie Mellon University’s 05-610: User-Centered Research and Evaluation Course. The goal is to explore how AI chatbots can thoughtfully engage with and challenge pre-existing beliefs in women's health conversations.
 
+## View deployed page
+https://anissakp.github.io/UCRE-Project-2/index.html
+
 ## Installation and Usage
 
 Follow these steps to set up the project locally:
